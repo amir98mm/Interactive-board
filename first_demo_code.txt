@@ -1,0 +1,176 @@
+// NeoPixel Ring simple sketch (c) 2013 Shae Erisson
+// Released under the GPLv3 license to match the rest of the
+// Adafruit NeoPixel library
+
+
+
+
+
+
+
+
+
+// Include required libraries:
+#include <HardwareSerial.h>
+
+// Define the Serial MP3 Player Module.
+HardwareSerial MP3(2); // Use UART2 for MP3 player communication
+
+// Define the required MP3 Player Commands:
+
+static int8_t set_volume[] = {0x7e, 0x03, 0x31, 0x12, 0xef}; // 7E 03 06 00 EF
+
+// Select storage device to TF card
+static int8_t select_SD_card[] = {0x7e, 0x03, 0X35, 0x01, 0xef}; // 7E 03 35 01 EF
+// Play with index: /01/001xxx.mp3
+static int8_t play_first_song[] = {0x7e, 0x04, 0x41, 0x00, 0x01, 0xef}; // 7E 04 41 00 01 EF
+// Play with index: /01/002xxx.mp3
+static int8_t play_second_song[] = {0x7e, 0x04, 0x41, 0x00, 0x02, 0xef}; // 7E 04 41 00 02 EF
+// Play the song.
+static int8_t play[] = {0x7e, 0x02, 0x01, 0xef}; // 7E 02 01 EF
+// Pause the song.
+static int8_t pauseCmd[] = {0x7e, 0x02, 0x02, 0xef}; // 7E 02 02 EF
+
+
+/////
+
+#include <ezButton.h>
+
+const int BUTTON_NUM = 2;
+
+const int BUTTON_1_PIN = 26;
+const int BUTTON_2_PIN = 27;
+
+ezButton buttonArray[] = {
+  ezButton(BUTTON_1_PIN),
+  ezButton(BUTTON_2_PIN),
+  //ezButton(BUTTON_3_PIN),
+  //ezButton(BUTTON_4_PIN),
+  //ezButton(BUTTON_5_PIN)
+};
+
+
+/////
+#include <Adafruit_NeoPixel.h>
+#ifdef _AVR_
+ #include <avr/power.h> // Required for 16 MHz Adafruit Trinket
+#endif
+
+// Which pin on the Arduino is connected to the NeoPixels?
+#define PIN        15 // On Trinket or Gemma, suggest changing this to 1
+
+// How many NeoPixels are attached to the Arduino?
+#define NUMPIXELS 2 // Popular NeoPixel ring size
+
+// When setting up the NeoPixel library, we tell it how many pixels,
+// and which pin to use to send signals. Note that for older NeoPixel
+// strips you might need to change the third parameter -- see the
+// strandtest example for more information on possible values.
+Adafruit_NeoPixel pixels(NUMPIXELS, PIN, NEO_GRB + NEO_KHZ800);
+
+#define DELAYVAL 500 // Time (in milliseconds) to pause between pixels
+
+void setup() {
+
+  Serial.begin(9600);
+  // These lines are specifically to support the Adafruit Trinket 5V 16 MHz.
+  // Any other board, you can remove this part (but no harm leaving it):
+#if defined(_AVR_ATtiny85_) && (F_CPU == 16000000)
+  clock_prescale_set(clock_div_1);
+#endif
+  // END of Trinket-specific code.
+
+  pixels.begin(); // INITIALIZE NeoPixel strip object (REQUIRED)
+
+
+
+
+    for (byte i = 0; i < BUTTON_NUM; i++) {
+    buttonArray[i].setDebounceTime(50); // set debounce time to 50 milliseconds
+  }
+
+
+  unsigned long prevtime = millis();
+
+
+
+  // Initiate the Serial MP3 Player Module.
+  MP3.begin(9600, SERIAL_8N1, 17, 16);
+  // Select the SD Card.
+  send_command_to_MP3_player(select_SD_card, 5);
+  send_command_to_MP3_player(set_volume, 5);
+}
+
+void loop() {
+
+  unsigned long current_time = millis();
+  pixels.clear(); // Set all pixel colors to 'off'
+
+  
+
+  // The first NeoPixel in a strand is #0, second is 1, all the way up
+  // to the count of pixels minus one.
+  for(int i=0; i<NUMPIXELS; i++) { // For each pixel...
+
+    // pixels.Color() takes RGB values, from 0,0,0 up to 255,255,255
+    // Here we're using a moderately bright green color:
+    pixels.setPixelColor(i, pixels.Color(255,0 , 0));
+     
+
+
+    pixels.show();   // Send the updated pixel colors to the hardware.
+    pixels.clear(); // Set all pixel colors to 'off'
+    delay(DELAYVAL); // Pause before next pass through loop
+  }
+
+  pixels.clear();
+  pixels.show();
+     
+ unsigned long prev_time=current_time;
+ unsigned long button0_time=0;
+ unsigned long button1_time=0;
+ int counter0=0;
+ int counter1=0;
+while (true){
+current_time = millis();
+    for (byte i = 0; i < BUTTON_NUM; i++)
+    buttonArray[i].loop(); // MUST call the loop() function first
+    
+  
+  if (current_time-prev_time>5000)
+  {
+    prev_time=current_time;
+    current_time = millis();
+    break;
+  }
+  if(buttonArray[0].isPressed()){
+    button0_time = millis();
+    counter0++;
+    }
+
+  if(buttonArray[1].isPressed()){
+    button1_time = millis();
+    counter1++;
+    }
+
+    if((counter0 == 1)&&(counter1 == 1)){
+      if( button0_time <  button1_time ){
+        Serial.println(" succes ");
+        send_command_to_MP3_player(play_first_song, 6);
+         break;
+      }
+      if( button0_time >  button1_time ){
+      Serial.println(" loser ");
+     send_command_to_MP3_player(play_second_song, 6);
+      }
+      break;
+        }
+   
+    }
+}
+
+void send_command_to_MP3_player(int8_t command[], int len){
+  Serial.print("\nMP3 Command => ");
+  for(int i=0;i<len;i++){ MP3.write(command[i]); Serial.print(command[i], HEX); }
+  delay(1000);
+}
