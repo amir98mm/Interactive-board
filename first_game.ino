@@ -94,11 +94,11 @@
 #define NOTE_CS8 4435
 #define NOTE_D8  4699
 #define NOTE_DS8 4978
-Adafruit_NeoPixel pixels(3, 15, NEO_GRB + NEO_KHZ800);
+Adafruit_NeoPixel pixels(6, 15, NEO_GRB + NEO_KHZ800);
 
 #include <HardwareSerial.h>
 HardwareSerial MP3(2); // Use UART2 for MP3 player communication
-static int8_t set_volume[] = {0x7e, 0x03, 0x31, 0x12, 0xef}; // 7E 03 06 00 EF
+static int8_t set_volume[] = {0x7e, 0x03, 0x31, 0x11, 0xef}; // 7E 03 06 00 EF
 static int8_t select_SD_card[] = {0x7e, 0x03, 0X35, 0x01, 0xef}; // 7E 03 35 01 EF
 static int8_t play_first_song[] = {0x7e, 0x04, 0x41, 0x00, 0x01, 0xef}; // 7E 04 41 00 01 EF
 static int8_t play_second_song[] = {0x7e, 0x04, 0x41, 0x00, 0x02, 0xef}; // 7E 04 41 00 02 EF
@@ -108,7 +108,7 @@ static int8_t pauseCmd[] = {0x7e, 0x02, 0x02, 0xef}; // 7E 02 02 EF
 /* Constants - define pin numbers for LEDs,
    buttons and speaker, and also the game tones: */
 const byte ledPins[] = {15};
-const byte buttonPins[] = {2, 4, 25, 26};
+const byte buttonPins[] = {2, 4, 25, 26, 19, 18};
 #define SPEAKER_PIN 17
 
 #define MAX_GAME_LENGTH 100
@@ -129,7 +129,7 @@ void setup() {
   send_command_to_MP3_player(select_SD_card, 5);
   send_command_to_MP3_player(set_volume, 5);
   pixels.begin();
-  for (byte i = 0; i < 4; i++) {
+  for (byte i = 0; i < 6; i++) {
     pinMode(buttonPins[i], INPUT_PULLUP);
   }
   pinMode(SPEAKER_PIN, OUTPUT);
@@ -165,7 +165,6 @@ void playSequence() {
     
     pixels.setPixelColor(currentLed, pixels.Color(255,0 , 0));
     pixels.show();   // Send the updated pixel colors to the hardware.
-            send_command_to_MP3_player(play_first_song, 6);
 
     delay(300);
     pixels.clear(); // Set all pixel colors to 'off'
@@ -182,7 +181,7 @@ void playSequence() {
 */
 byte readButtons() {
   while (true) {
-    for (byte i = 0; i < 4; i++) {
+    for (byte i = 0; i < 6; i++) {
       byte buttonPin = buttonPins[i];
       if (digitalRead(buttonPin) == LOW) {
         return i;
@@ -227,10 +226,11 @@ bool checkUserSequence() {
     byte actualButton = readButtons();
     lightLedAndPlayTone(actualButton);
     if (expectedButton != actualButton) {
+      send_command_to_MP3_player(play_second_song, 6);
       return false;
     }
   }
-
+  send_command_to_MP3_player(play_first_song, 6);
   return true;
 }
 
@@ -258,7 +258,7 @@ void playLevelUpSound() {
 */
 void loop() {
   // Add a random color to the end of the sequence
-  gameSequence[gameIndex] = random(0, 3);
+  gameSequence[gameIndex] = random(0, 6);
   gameIndex++;
   if (gameIndex >= MAX_GAME_LENGTH) {
     gameIndex = MAX_GAME_LENGTH - 1;

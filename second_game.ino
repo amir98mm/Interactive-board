@@ -1,30 +1,30 @@
 #include <Adafruit_NeoPixel.h>
 
 #define LED_PIN 15
-#define NUM_LEDS 4
+#define NUM_LEDS 6
 #define LED_TYPE NEO_GRB + NEO_KHZ800
-#define GREEN 0
+#define GREEN 2
 #define BLUE 1
-#define RED 2
+#define RED 0
 
 Adafruit_NeoPixel leds(NUM_LEDS, LED_PIN, LED_TYPE);
 byte sequence[6] = {0};
 byte presses[6] = {0};
-const byte buttonPins[] = {2, 4, 25, 26};
+const byte buttonPins[] = {2, 4, 25, 26, 18, 19};
 
 
 void setup() {
   Serial.begin(9600);
   leds.begin();
   leds.show(); // Initialize all LEDs to an off state
-  for (byte i = 0; i < 4; i++) {
+  for (byte i = 0; i < 6; i++) {
     pinMode(buttonPins[i], INPUT_PULLUP);
   }
 }
 
 byte readButtons() {
   while (true) {
-    for (byte i = 0; i < 4; i++) {
+    for (byte i = 0; i < 6; i++) {
       byte buttonPin = buttonPins[i];
       if (digitalRead(buttonPin) == LOW) {
         return i;
