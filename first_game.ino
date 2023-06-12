@@ -169,10 +169,14 @@ Adafruit_NeoPixel pixels(6, 15, NEO_GRB + NEO_KHZ800);
 
 #include <HardwareSerial.h>
 HardwareSerial MP3(2); // Use UART2 for MP3 player communication
-static int8_t set_volume[] = {0x7e, 0x03, 0x31, 0x08, 0xef}; // 7E 03 06 00 EF
+static int8_t set_volume[] = {0x7e, 0x03, 0x31, 0x17, 0xef}; // 7E 03 06 00 EF
 static int8_t select_SD_card[] = {0x7e, 0x03, 0X35, 0x01, 0xef}; // 7E 03 35 01 EF
 static int8_t play_first_song[] = {0x7e, 0x04, 0x41, 0x00, 0x01, 0xef}; // 7E 04 41 00 01 EF
 static int8_t play_second_song[] = {0x7e, 0x04, 0x41, 0x00, 0x02, 0xef}; // 7E 04 41 00 02 EF
+static int8_t play_third_song[] = {0x7e, 0x04, 0x41, 0x00, 0x03, 0xef}; // 7E 04 41 00 01 EF
+static int8_t play_fourth_song[] = {0x7e, 0x04, 0x41, 0x00, 0x04, 0xef}; // 7E 04 41 00 02 EF
+static int8_t play_fifth_song[] = {0x7e, 0x04, 0x41, 0x00, 0x05, 0xef}; // 7E 04 41 00 01 EF
+static int8_t play_sixth_song[] = {0x7e, 0x04, 0x41, 0x00, 0x06, 0xef}; // 7E 04 41 00 02 EF
 static int8_t play[] = {0x7e, 0x02, 0x01, 0xef}; // 7E 02 01 EF
 static int8_t pauseCmd[] = {0x7e, 0x02, 0x02, 0xef}; // 7E 02 02 EF
 
@@ -295,11 +299,11 @@ bool checkUserSequence() {
     byte actualButton = readButtons();
     lightLedAndPlayTone(actualButton);
     if (expectedButton != actualButton) {
-      send_command_to_MP3_player(play_second_song, 6);
+      send_command_to_MP3_player(play_first_song, 6);
       return false;
     }
   }
-  send_command_to_MP3_player(play_first_song, 6);
+  send_command_to_MP3_player(play_second_song, 6);
   return true;
 }
 
