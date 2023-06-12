@@ -5,6 +5,77 @@
  #include <avr/power.h> // Required for 16 MHz Adafruit Trinket
 #endif
 
+//here is the screen
+#include <MD_MAX72xx.h>
+#include <SPI.h>
+
+// Constants for MAX7219 configuration
+#define HARDWARE_TYPE MD_MAX72XX::FC16_HW
+#define MAX_DEVICES  2
+#define WRAPAROUND_MODE MD_MAX72XX::ON
+
+#define CLK_PIN   18  // or SCK
+#define DATA_PIN  23  // or MOSI
+#define CS_PIN    5  // or SS
+
+// SPI hardware interface
+MD_MAX72XX mx = MD_MAX72XX(HARDWARE_TYPE, CS_PIN, MAX_DEVICES);
+
+// Vertical representation of the number "5"
+
+const uint8_t verticalNumber0[] = {
+0x00,0x18,0x24,0x24,0x24,0x24,0x18,0x00};
+
+const uint8_t verticalNumber1[] = {
+0x10,0x18,0x14,0x10,0x10,0x10,0x38,0x00};
+
+
+const uint8_t verticalNumber2[] = {
+0x3C,0x20,0x20,0x3C,0x04,0x04,0x3C,0x00
+};
+
+const uint8_t verticalNumber3[] = {
+0x3C,0x20,0x20,0x3C,0x20,0x20,0x3C,0x00};
+
+const uint8_t verticalNumber4[] = {
+0x24,0x24,0x24,0x3C,0x20,0x20,0x20,0x00};
+
+const uint8_t verticalNumber5[] = {
+  B00111100,
+  B00000100,
+  B00000100,
+  B00111100,
+  B00100000,
+  B00100000,
+  B00111100,
+  B00000000
+
+};
+
+const uint8_t verticalNumber6[] = {
+0x3C,0x04,0x04,0x3C,0x24,0x24,0x3C,0x00};
+
+const uint8_t verticalNumber7[] = {
+0x3C,0x24,0x20,0x20,0x20,0x20,0x20,0x00};
+
+const uint8_t verticalNumber8[] = {
+0x3C,0x24,0x24,0x3C,0x24,0x24,0x3C,0x00};
+
+const uint8_t verticalNumber9[] = {
+0x3C,0x24,0x24,0x3C,0x20,0x20,0x3C,0x00};
+
+
+const uint8_t smile[] = {
+0x3C,0x42,0xA5,0x81,0xA5,0x99,0x42,0x3C
+};
+
+const uint8_t* nums[10]={verticalNumber0,verticalNumber1,verticalNumber2,verticalNumber3,verticalNumber4,verticalNumber5,verticalNumber6,verticalNumber7,verticalNumber8,verticalNumber9};
+
+const uint8_t sad[] = {
+0x3C,0x42,0xA5,0x81,0x99,0xA5,0x42,0x3C
+};
+//end of screen code
+
 #define NOTE_B0  31
 #define NOTE_C1  33
 #define NOTE_CS1 35
@@ -98,7 +169,7 @@ Adafruit_NeoPixel pixels(6, 15, NEO_GRB + NEO_KHZ800);
 
 #include <HardwareSerial.h>
 HardwareSerial MP3(2); // Use UART2 for MP3 player communication
-static int8_t set_volume[] = {0x7e, 0x03, 0x31, 0x11, 0xef}; // 7E 03 06 00 EF
+static int8_t set_volume[] = {0x7e, 0x03, 0x31, 0x08, 0xef}; // 7E 03 06 00 EF
 static int8_t select_SD_card[] = {0x7e, 0x03, 0X35, 0x01, 0xef}; // 7E 03 35 01 EF
 static int8_t play_first_song[] = {0x7e, 0x04, 0x41, 0x00, 0x01, 0xef}; // 7E 04 41 00 01 EF
 static int8_t play_second_song[] = {0x7e, 0x04, 0x41, 0x00, 0x02, 0xef}; // 7E 04 41 00 02 EF
@@ -108,7 +179,7 @@ static int8_t pauseCmd[] = {0x7e, 0x02, 0x02, 0xef}; // 7E 02 02 EF
 /* Constants - define pin numbers for LEDs,
    buttons and speaker, and also the game tones: */
 const byte ledPins[] = {15};
-const byte buttonPins[] = {2, 4, 25, 26, 19, 18};
+const byte buttonPins[] = {2, 4, 25, 26, 19, 13};
 #define SPEAKER_PIN 17
 
 #define MAX_GAME_LENGTH 100
@@ -123,8 +194,11 @@ byte gameIndex = 0;
    Set up the ESP32 board and initialize Serial communication
 */
 void setup() {
+  mx.begin();               // Initialize MD_MAX72XX
+  mx.control(MD_MAX72XX::INTENSITY, 4);  // Set brightness (0-15)
+  mx.clear();               // Clear the display
   Serial.begin(9600);
-    MP3.begin(9600, SERIAL_8N1, 17, 16);
+  MP3.begin(9600, SERIAL_8N1, 17, 16);
   // Select the SD Card.
   send_command_to_MP3_player(select_SD_card, 5);
   send_command_to_MP3_player(set_volume, 5);
@@ -184,10 +258,20 @@ byte readButtons() {
     for (byte i = 0; i < 6; i++) {
       byte buttonPin = buttonPins[i];
       if (digitalRead(buttonPin) == LOW) {
+        delay(500);
+        Serial.print("===>");
+        Serial.print(i);
         return i;
       }
     }
     delay(1);
+  }
+}
+
+void printLose(){
+  for (int row = 0; row < 8; row++) {
+   mx.setColumn(0, row, sad[row]);
+   mx.setColumn(1, row, sad[row]);
   }
 }
 
@@ -198,23 +282,8 @@ void gameOver() {
   Serial.print("Game over! your score: ");
   Serial.println(gameIndex - 1);
   gameIndex = 0;
-  delay(200);
-
-  // Play a Wah-Wah-Wah-Wah sound
-//  tone(SPEAKER_PIN, NOTE_DS5);
-//  delay(300);
-//  tone(SPEAKER_PIN, NOTE_D5);
-//  delay(300);
-//  tone(SPEAKER_PIN, NOTE_CS5);
-//  delay(300);
-//  for (byte i = 0; i < 10; i++) {
-//    for (int pitch = -10; pitch <= 10; pitch++) {
-//      tone(SPEAKER_PIN, NOTE_C5 + pitch);
-//      delay(5);
-//    }
-//  }
- // noTone(SPEAKER_PIN);
- // delay(500);
+  printLose();
+  delay(2000);
 }
 
 /**
@@ -256,7 +325,17 @@ void playLevelUpSound() {
 /**
    The main game loop
 */
+void printScore(int gameIndex){
+  int first=gameIndex%10;
+  int sec=gameIndex/10;
+  for (int row = 0; row < 8; row++) {
+   mx.setColumn(0, row, nums[sec][row]);
+   mx.setColumn(1, row, nums[first][row]);
+  }
+}
+
 void loop() {
+  printScore(gameIndex);
   // Add a random color to the end of the sequence
   gameSequence[gameIndex] = random(0, 6);
   gameIndex++;
