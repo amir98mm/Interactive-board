@@ -16,6 +16,8 @@
 byte gameSequence[MAX_GAME_LENGTH] = {0};
 byte gameIndex = 0;
 ezButton mySwitch(32);  // create ezButton object that attach to ESP32 pin GIOP25
+ezButton power(27);  // create ezButton object that attach to ESP32 pin GIOP25 for ON/OFF
+bool powered = false;
 //-------------------- end of General Params--------------------------
 
 
@@ -105,10 +107,13 @@ const byte buttonPins[] = {2, 4, 25, 26, 19, 13};
 //----------------------MP3----------------------------
 #include <HardwareSerial.h>
 HardwareSerial MP3(2); // Use UART2 for MP3 player communication
-static int8_t set_volume[] = {0x7e, 0x03, 0x31, 0x09, 0xef}; // 7E 03 06 00 EF
+static int8_t set_volume[] = {0x7e, 0x03, 0x31, 0x07, 0xef}; // 7E 03 06 00 EF
 static int8_t select_SD_card[] = {0x7e, 0x03, 0X35, 0x01, 0xef}; // 7E 03 35 01 EF
 static int8_t play_first_song[] = {0x7e, 0x04, 0x41, 0x00, 0x01, 0xef}; // 7E 04 41 00 01 EF
 static int8_t play_second_song[] = {0x7e, 0x04, 0x41, 0x00, 0x02, 0xef}; // 7E 04 41 00 02 EF
+static int8_t play_red_song[] = {0x7e, 0x04, 0x41, 0x00, 0x03, 0xef}; // 7E 04 41 00 02 EF
+static int8_t play_blue_song[] = {0x7e, 0x04, 0x41, 0x00, 0x04, 0xef}; // 7E 04 41 00 02 EF
+static int8_t play_green_song[] = {0x7e, 0x04, 0x41, 0x00, 0x05, 0xef}; // 7E 04 41 00 02 EF
 static int8_t play[] = {0x7e, 0x02, 0x01, 0xef}; // 7E 02 01 EF
 static int8_t pauseCmd[] = {0x7e, 0x02, 0x02, 0xef}; // 7E 02 02 EF
 #define SPEAKER_PIN 17
@@ -148,11 +153,24 @@ bool checkSwitch(){
   return true;
 }
 
+void checkPower(){
+  int state = power.getStateRaw();
+  if(state==HIGH){
+    powered = false;
+  }else{
+    powered = true;
+  }
+}
+
 bool playSequence() {
   for (int i = 0; i < gameIndex; i++) {
     byte currentLed = gameSequence[i];
     pixels.setPixelColor(currentLed, pixels.Color(255, 0, 0));
     pixels.show();
+    checkPower();
+    if(powered==false){
+      return false;
+    }
     unsigned long startTime = millis();
     unsigned long elapsedTime = 0;
     while (elapsedTime < 300) {
@@ -176,6 +194,10 @@ byte SWITCH_FLAG = 7;
 
 byte readButtons() {
   while (true) {
+    checkPower();
+    if(powered==false){
+      return -1;
+    }
     if(!checkSwitch()){
         return SWITCH_FLAG;
     }
@@ -192,23 +214,7 @@ byte readButtons() {
   }
 }
 
-byte readButtons_2() {
-  while (true) {
-    if(checkSwitch()){
-        return SWITCH_FLAG;
-    }
-    for (byte i = 0; i < 6; i++) {
-      byte buttonPin = buttonPins[i];
-      if (digitalRead(buttonPin) == LOW) {
-        delay(500);
-        Serial.print("===>");
-        Serial.print(i);
-        return i;
-      }
-    }
-    delay(1);
-  }
-}
+
 
 void printLose(){
   for (int row = 0; row < 8; row++) {
@@ -237,20 +243,40 @@ const int SWITCH = 2;
 
 int checkUserSequence() {
   for (int i = 0; i < gameIndex; i++) {
+    checkPower();
+    if(powered==false){
+      return -1;
+    }
     if(!checkSwitch()){
        return SWITCH;
     }
     byte expectedButton = gameSequence[i];
     byte actualButton = readButtons();
+    checkPower();
+    if(powered==false){
+      return -1;
+    }
     if(actualButton == SWITCH_FLAG){
+      checkPower();
+      if(powered==false){
+        return -1;
+      }
       return SWITCH;
     }
     //lightLedAndPlayTone(actualButton);
     if (expectedButton != actualButton) {
+      checkPower();
+      if(powered==false){
+        return -1;
+      }
       send_command_to_MP3_player(play_first_song, 6);
       return SIMON_FAIL;
     }
   }
+  checkPower();
+    if(powered==false){
+      return -1;
+    }
   send_command_to_MP3_player(play_second_song, 6);
   return SUCCESS;
 }
@@ -274,6 +300,29 @@ void printScore(int gameIndex){
 
 byte sequence[6] = {0};
 byte presses[6] = {0};
+
+byte readButtons_2() {
+  while (true) {
+    checkPower();
+    if(powered==false){
+      return -1;
+    }
+    if(checkSwitch()){
+        return SWITCH_FLAG;
+    }
+    for (byte i = 0; i < 6; i++) {
+      byte buttonPin = buttonPins[i];
+      if (digitalRead(buttonPin) == LOW) {
+        delay(500);
+        Serial.print("===>");
+        Serial.print(i);
+        return i;
+      }
+    }
+    delay(1);
+  }
+}
+
 //--------------------End Game 2 -------------------------------
 
 
@@ -310,8 +359,15 @@ void loop() {
       pixels.show();
       delay(1000);
   }
-
+  
+  //--------------------------------------- Game 1 ----------------------------------------------
   if (state == HIGH){
+    checkPower();
+    if(powered==false){
+      mx.clear(); 
+      gameIndex=0;
+      return;
+    }
     printScore(gameIndex);
     // Add a random color to the end of the sequence
     gameSequence[gameIndex] = random(0, 6);
@@ -323,9 +379,21 @@ void loop() {
     if(!playSequence()){
         gameIndex=0;
         return;
-      }
+    }
+    checkPower();
+    if(powered==false){
+        mx.clear(); 
+        gameIndex=0;
+        return;
+     }
     int res = checkUserSequence();
     if(res == SIMON_FAIL){
+      checkPower();
+      if(powered==false){
+        mx.clear(); 
+        gameIndex=0;
+        return;
+      }
       gameOver();
     }else if(res==SWITCH){
       gameIndex=0;
@@ -333,17 +401,24 @@ void loop() {
     }
 
     delay(300);
-
-    if (gameIndex > 0) {
-    //    playLevelUpSound();
-    //    delay(300);
-    }
   }
-  
+  //--------------------------------------- Game 2 ----------------------------------------------
  else{
+  checkPower();
+  if(powered==false){
+    mx.clear(); 
+    Serial.println("Turned OFF");
+    return;
+  }
   printScore(gameIndex);
   pixels.clear();
   for (int i = 0; i < NUM_LEDS; i++) {
+    checkPower();
+    if(powered==false){
+      mx.clear(); 
+      gameIndex=0;
+      return;
+    }
     presses[i]=0;
     int color = random(3); // Generate a random number to select a color
     sequence[i] = color;
@@ -369,6 +444,12 @@ void loop() {
   unsigned long startTime = millis();
   unsigned long elapsedTime = 0;
   while (elapsedTime < 6000) {
+      checkPower();
+      if(powered==false){
+        gameIndex=0;
+        mx.clear(); 
+        return;
+      }
       if(checkSwitch()){
         return;
       }
@@ -380,6 +461,12 @@ void loop() {
   startTime = millis();
   elapsedTime = 0;
     while (elapsedTime < 2000) {
+      checkPower();
+      if(powered==false){
+        gameIndex=0;
+        mx.clear(); 
+        return;
+      }
      if(checkSwitch()){
         return ;
       }
@@ -394,6 +481,12 @@ void loop() {
   
   bool not_contains = true;
   while(not_contains){
+    checkPower();
+    if(powered==false){
+        gameIndex=0;
+        mx.clear(); 
+        return;
+      }
     for(int i=0; i<NUM_LEDS; i++){
       if(choosed_color == sequence[i]){
         not_contains = false;
@@ -405,19 +498,45 @@ void loop() {
     choosed_color = random(3);
   }
   Serial.print(choosed_color);
+  if (choosed_color == GREEN) {
+      send_command_to_MP3_player(play_green_song, 6);
+    } else if (choosed_color == BLUE) {
+      send_command_to_MP3_player(play_blue_song, 6);
+    } else {
+      send_command_to_MP3_player(play_red_song, 6);
+    }
+
   
 
   while(true){
+    checkPower();
+    if(powered==false){
+        gameIndex=0;
+        mx.clear(); 
+        return;
+      }
       byte actualButton = readButtons_2();
       if(actualButton == SIMON_FAIL){
+        checkPower();
+        if(powered==false){
+          gameIndex=0;
+          mx.clear(); 
+          return;
+        }
         gameOver();
-      }else if(actualButton==SWITCH){
+      }else if(actualButton==SWITCH_FLAG){
         gameIndex=0;
-      return;
+        return;
     }
       Serial.print("BUTTON : ");
       Serial.println(actualButton);
       if(sequence[actualButton]!= choosed_color){
+        checkPower();
+        if(powered==false){
+          gameIndex=0;
+          mx.clear(); 
+          return;
+        }
         gameOver();
         Serial.print("You Lose !");
         break;
@@ -427,11 +546,23 @@ void loop() {
       }
       int flag=0;
       for(int i = 0; i < NUM_LEDS; i++){
+        checkPower();
+        if(powered==false){
+          gameIndex=0;
+          mx.clear(); 
+          return;
+        }
         if(sequence[i]==choosed_color && presses[i]==0){
           flag=1;
           break;
         }
       }
+      checkPower();
+        if(powered==false){
+          gameIndex=0;
+          mx.clear(); 
+          return;
+        }
       if(flag==0) {
       Serial.print("You win !");
       gameIndex++;
