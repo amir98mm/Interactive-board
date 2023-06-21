@@ -1,0 +1,6 @@
+1) Open the esp code using arduino app.
+2) connect usb port with the esp in the pill box.
+3) Make sure you installed relevant libraries according to ReadMe file, then press upload code (make sure you are working on the corret port).
+4) Sometimes you need to press boot on the ESP32, when the code starts connecting.
+5) The esp will start working, you can change the code and parameters as you like. it is just a plug and run system.
+6) After you upload the code on the ESP32, you can use it using electric plug.
