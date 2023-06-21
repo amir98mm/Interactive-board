@@ -20,6 +20,8 @@ We offer two switchable memory games at the press of a button.
 - HardwareSerial.h Version 8.0.1
 
 ## Project Poster:
+![IOT poster](https://github.com/amir98mm/Interactive-board/assets/75622732/3d6ee0b9-6b2a-4ef1-9c07-1f18d7cfbef5)
+
  
 This project is part of ICST - The Interdisciplinary Center for Smart Technologies, Taub Faculty of Computer Science, Technion
 https://icst.cs.technion.ac.il/
