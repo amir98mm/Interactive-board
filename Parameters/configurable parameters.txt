@@ -1,1 +1,5 @@
 The parameters are at the top of the ESP32 code
+
+MAX_GAME_LENGTH : This parameter refers to the maximum level of the game.
+volume : This parameter decides the volume of the speaker.
+start_level : This parameter refers to the start amount time (showing the leds) in the second game.
