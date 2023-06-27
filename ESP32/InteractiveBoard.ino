@@ -11,7 +11,7 @@
 
 
 //-------------------- General Params--------------------------
-#define MAX_GAME_LENGTH 4
+#define MAX_GAME_LENGTH 6
 /* Global variables - store the game state */
 byte gameSequence[MAX_GAME_LENGTH] = {0};
 byte gameIndex = 0;
@@ -387,7 +387,7 @@ void loop() {
   unsigned long startTime = millis();
   unsigned long elapsedTime = 0;
   
-  while (elapsedTime < start_level - level*500) {
+  while (elapsedTime < start_level - level*700) {
       if(checkSwitch()){
         return;
       }
@@ -403,6 +403,7 @@ void loop() {
   elapsedTime = 0;
     while (elapsedTime < 2000) {
      if(checkSwitch()){
+        level=0;
         return ;
       }
       elapsedTime = millis() - startTime;
@@ -441,6 +442,7 @@ void loop() {
       byte actualButton = readButtons_2();
       if(actualButton==SWITCH_FLAG){
         gameIndex=0;
+        level=0;
         return;
       }
       Serial.print("BUTTON : ");
@@ -448,6 +450,7 @@ void loop() {
       if(sequence[actualButton]!= choosed_color){
         send_command_to_MP3_player(play_first_song, 6);
         gameOver();
+        level=0;
         Serial.print("You Lose !");
         return;
       }
