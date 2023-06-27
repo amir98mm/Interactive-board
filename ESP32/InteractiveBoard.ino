@@ -11,14 +11,14 @@
 
 
 //-------------------- General Params--------------------------
-#define MAX_GAME_LENGTH 6
+#define MAX_GAME_LENGTH 9
 /* Global variables - store the game state */
 byte gameSequence[MAX_GAME_LENGTH] = {0};
 byte gameIndex = 0;
 ezButton mySwitch(32);  // create ezButton object that attach to ESP32 pin GIOP25
 int level = 0;
-int8_t volume = 0x17;
-unsigned long start_level = 8000;
+int8_t volume = 0x50;
+unsigned long start_level = 7000;
 //-------------------- end of General Params--------------------------
 
 
@@ -189,7 +189,7 @@ byte readButtons() {
     for (byte i = 0; i < 6; i++) {
       byte buttonPin = buttonPins[i];
       if (digitalRead(buttonPin) == LOW) {
-        delay(500);
+        delay(300);
         Serial.print("===>");
         Serial.print(i);
         return i;
@@ -393,7 +393,7 @@ void loop() {
       }
       elapsedTime = millis() - startTime;
   }
-  if(start_level - level*500 >= 3000){
+  if(start_level - level*1500 >= 1000){
     level++;
   }
   pixels.clear();
