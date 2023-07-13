@@ -113,9 +113,18 @@ static int8_t select_SD_card[] = {0x7e, 0x03, 0X35, 0x01, 0xef}; // 7E 03 35 01 
 static int8_t play_first_song[] = {0x7e, 0x04, 0x41, 0x00, 0x01, 0xef}; // 7E 04 41 00 01 EF
 static int8_t play_second_song[] = {0x7e, 0x04, 0x41, 0x00, 0x02, 0xef}; // 7E 04 41 00 02 EF
 static int8_t play_red_song[] = {0x7e, 0x04, 0x41, 0x00, 0x03, 0xef}; // 7E 04 41 00 02 EF
-static int8_t play_blue_song[] = {0x7e, 0x04, 0x41, 0x00, 0x04, 0xef}; // 7E 04 41 00 02 EF
-static int8_t play_green_song[] = {0x7e, 0x04, 0x41, 0x00, 0x05, 0xef}; // 7E 04 41 00 02 EF
-static int8_t play_win_song[] = {0x7e, 0x04, 0x41, 0x00, 0x06, 0xef}; // 7E 04 41 00 02 EF
+static int8_t play_blue_song[] = {0x7e, 0x04, 0x41, 0x00, 0x04, 0xef};
+static int8_t play_green_song[] = {0x7e, 0x04, 0x41, 0x00, 0x05, 0xef};
+static int8_t play_win_song[] = {0x7e, 0x04, 0x41, 0x00, 0x06, 0xef};
+static int8_t play_first_tone[] = {0x7e, 0x04, 0x41, 0x00, 0x07, 0xef};
+static int8_t play_second_tone[] = {0x7e, 0x04, 0x41, 0x00, 0x08, 0xef};
+static int8_t play_third_tone[] = {0x7e, 0x04, 0x41, 0x00, 0x09, 0xef};
+static int8_t play_fourth_tone[] = {0x7e, 0x04, 0x41, 0x00, 0x0A, 0xef};
+static int8_t play_fivth_tone[] = {0x7e, 0x04, 0x41, 0x00, 0x0B, 0xef};
+static int8_t play_sixth_tone[] = {0x7e, 0x04, 0x41, 0x00, 0x0C, 0xef};
+
+static int8_t *led_tones[]={play_first_tone,play_second_tone,play_third_tone,play_fourth_tone,play_fivth_tone,play_sixth_tone};
+
 static int8_t play[] = {0x7e, 0x02, 0x01, 0xef}; // 7E 02 01 EF
 static int8_t pauseCmd[] = {0x7e, 0x02, 0x02, 0xef}; // 7E 02 02 EF
 #define SPEAKER_PIN 17
@@ -160,6 +169,7 @@ bool playSequence() {
     byte currentLed = gameSequence[i];
     pixels.setPixelColor(currentLed, pixels.Color(255, 0, 0));
     pixels.show();
+    send_command_to_MP3_player(led_tones[gameSequence[i]], 6);
     unsigned long startTime = millis();
     unsigned long elapsedTime = 0;
     while (elapsedTime < 300) {
@@ -192,6 +202,8 @@ byte readButtons() {
         delay(300);
         Serial.print("===>");
         Serial.print(i);
+        send_command_to_MP3_player(led_tones[i], 6);
+        delay(500); 
         return i;
       }
     }
@@ -253,10 +265,12 @@ int checkUserSequence() {
     //lightLedAndPlayTone(actualButton);
     if (expectedButton != actualButton) {
       send_command_to_MP3_player(play_first_song, 6);
+      delay(700);
       return SIMON_FAIL;
     }
   }
   send_command_to_MP3_player(play_second_song, 6);
+  delay(700);
   return SUCCESS;
 }
 
